@@ -9,12 +9,16 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvInternalCamera;
 
 public class abstraction {
 
@@ -22,11 +26,8 @@ public class abstraction {
     private final ElapsedTime runtime = new ElapsedTime();
 
     public double coneLocationFromOrigin;
-    //TODO average all values and find values that are proven statistically different through chi^2, (bio reference)
-    //TODO average location of continuous, statistically different values to get the middle of a pole and the distance to it.
-    //TODO implement aiden's mathematics
 
-    public ArrayList<Double> rawJiggleData;
+
 
     public Servo grabber;
 
@@ -48,10 +49,29 @@ public class abstraction {
         gamepad1=g;
     }
 
-
+    public opencvpipelines detector;
 
     public void defineAndStart(){
 
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        OpenCvCamera camera = OpenCvCameraFactory.getInstance().createInternalCamera(OpenCvInternalCamera.CameraDirection.BACK, cameraMonitorViewId);
+        detector = new opencvpipelines();
+        camera.setPipeline(detector);
+        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        {
+            @Override
+            public void onOpened()
+            {
+                camera.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+            }
+            @Override
+            public void onError(int errorCode)
+            {
+                /*
+                 * This will be called if the camera could not be opened
+                 */
+            }
+        });
         fl= hardwareMap.get(DcMotor.class, "FL");
         fr= hardwareMap.get(DcMotor.class, "FR");
         bl= hardwareMap.get(DcMotor.class, "BL");
@@ -79,6 +99,7 @@ public class abstraction {
         fr.setDirection(DcMotor.Direction.FORWARD);
         bl.setDirection(DcMotor.Direction.REVERSE);
         br.setDirection(DcMotor.Direction.FORWARD);
+
     }
 
     void extend(int position) {
@@ -167,36 +188,6 @@ public class abstraction {
     }
 
 
-    public void jiggle(double deg) {
-        blockDriver=true;
-        move(0, 0, -deg, 0, 12.05, 1);
-
-        // make sure arraylist exists & is empty
-        rawJiggleData = new ArrayList<Double>();
-        rawJiggleData.clear();
-
-        // and then we jiggle;
-
-        fl.setDirection(DcMotorSimple.Direction.REVERSE);
-        fr.setDirection(DcMotorSimple.Direction.FORWARD);
-        bl.setDirection(DcMotorSimple.Direction.REVERSE);
-        br.setDirection(DcMotorSimple.Direction.FORWARD);
-        int position = (int) (2*deg * 12.05)*-1; // jeet wtf is this code?
-        settargetposition(fl, -position); // and then you negate the negative? WTF you're wasting clock cycles!
-        settargetposition(bl, -position);
-        settargetposition(br, position);
-        settargetposition(fr, position);
-        while (fl.isBusy()){rawJiggleData.add(distance_sensor.getDistance(DistanceUnit.CM));}
-        fl.setPower(0);
-        fr.setPower(0);
-        bl.setPower(0);
-        br.setPower(0);
-
-
-
-
-        blockDriver=false;
-    }
     public void jiggle_and_move(double deg){
        // abstraction robot = new abstraction(hardwareMap, gamepad1);
 
@@ -204,8 +195,7 @@ public class abstraction {
         move(0, 0, -deg, 0, 12.05, 1);
 
         // make sure arraylist exists & is empty
-        rawJiggleData = new ArrayList<Double>();
-        rawJiggleData.clear();
+
 
         // and then we jiggle;
 
@@ -249,9 +239,6 @@ public class abstraction {
             last_data = d;
 
 
-            rawJiggleData.add(distance_sensor.getDistance(DistanceUnit.CM));
-
-
 
         }
         fl.setPower(0);
@@ -259,6 +246,100 @@ public class abstraction {
         bl.setPower(0);
         br.setPower(0);
 
+
+
+    }
+    public float mse(byte[] rgb){
+        // abstraction robot = new abstraction(hardwareMap, gamepad1);
+        byte[] yellow = {127,127,-128};
+        int sum = 0;
+        for (int i = 0; i <rgb.length; i++){
+           sum += Math.pow(yellow[i]-rgb[i],2);
+        }
+
+        return sum;
+
+    }
+    public boolean centered = false;
+    public boolean forward = false;
+    public boolean go = true;
+    public void jiggle_v2(){
+        while (!centered && go){
+            boolean l1 = center(detector.get_pixels());
+            if (!centered) {
+                if (l1) {
+                    move(0, 0, 1, 0, 12.05, 1);
+                }
+                else {
+                    move(0, 0, -1, 0, 12.05, 1);
+                }
+            }
+        }
+        while (!forward && go){
+            boolean l1 = f(detector.get_pixels());
+            if (!forward) {
+                if (l1) {
+                    move(0, 2, 0, 0, 12.05, 1);
+                }
+
+            }
+        }
+
+    }
+    public boolean center(byte[][][] array_of_pixels){
+        int line_num  = (int)array_of_pixels.length/3;
+        byte[][] line_of_pixels = array_of_pixels[line_num];
+        int yellow_counter = 0;
+        int yellows = 0;
+        boolean prev_data = false;
+        int highest_num_yellow = 0;
+        for (int i = 0; i <line_of_pixels.length; i++){
+            float j = mse(line_of_pixels[i]);
+            if (j <= 30){
+               yellow_counter += 1;
+               prev_data = true;
+            }
+            else if(prev_data && highest_num_yellow <= yellow_counter){
+                highest_num_yellow = yellow_counter;
+                yellows = (int) (i - yellow_counter)/2;
+            }
+        }
+        if (yellows > line_of_pixels.length/2){
+            return true;
+        }
+        else if (yellows ==line_of_pixels.length/2) {
+            centered = true;
+        }
+
+        return false;
+
+
+
+    }
+    public boolean f(byte[][][] array_of_pixels){
+        int line_num  = (int)array_of_pixels.length/3;
+        byte[][] line_of_pixels = array_of_pixels[line_num];
+        int yellow_counter = 0;
+        int yellows = 0;
+        boolean prev_data = false;
+        int highest_num_yellow = 0;
+        for (int i = 0; i <line_of_pixels.length; i++){
+            float j = mse(line_of_pixels[i]);
+            if (j <= 30){
+                yellow_counter += 1;
+                prev_data = true;
+            }
+            else if(prev_data && highest_num_yellow <= yellow_counter){
+                highest_num_yellow = yellow_counter;
+                yellows = (int) (i - yellow_counter)/2;
+            }
+        }
+        if (yellow_counter == line_of_pixels.length){
+            forward = true;
+            return true;
+
+        }
+        return false;
 
 
 
