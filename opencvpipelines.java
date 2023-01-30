@@ -7,7 +7,7 @@ import org.openftc.easyopencv.OpenCvPipeline;
 public class opencvpipelines extends OpenCvPipeline{
         Mat mat = new Mat();
 
-        public byte[][][] image;
+        ArrayList<ArrayList<ArrayList<Double>>> image;
         @Override
         public Mat processFrame(Mat input) {
                 Mat c = input.clone();
@@ -26,7 +26,7 @@ public class opencvpipelines extends OpenCvPipeline{
                         pixels.add(t2)
                 }
                 
-                return pixels;
+                return c;
         }
 
         public ArrayList<ArrayList<ArrayList<Double>>> get_pixels(){
