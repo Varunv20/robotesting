@@ -12,23 +12,24 @@ public class opencvpipelines extends OpenCvPipeline{
         public Mat processFrame(Mat input) {
                 Mat c = input.clone();
                 int pixelsCounter = 0;
-                ArrayList<ArrayList<Double>> pixels = new ArrayList<>();
+                ArrayList<ArrayList<ArrayList<Double>>> pixels = new ArrayList<>();
                 for (int i = 0; i < c.height(); i++) {
+                        ArrayList<ArrayList<Double> > t2 = new ArrayList<>();
                         for (int j = 0; j < c.width(); j++) {
                                 pixelsCounter++;
                                 ArrayList<Double> tmp = new ArrayList<>();
                                 tmp.add(c.get(i, j)[0]);
                                 tmp.add(c.get(i, j)[1]);
                                 tmp.add(c.get(i, j)[2]);
-                                pixels.add(tmp);
+                                t2.add(tmp);
                         }
+                        pixels.add(t2)
                 }
-                byte[][][] p = (byte[][][]) pixels.toArray();
-                image = p;
-                return input;
+                
+                return pixels;
         }
 
-        public byte[][][] get_pixels(){
+        public ArrayList<ArrayList<ArrayList<Double>>> get_pixels(){
                 return image;
         }
         }
