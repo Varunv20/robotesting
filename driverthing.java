@@ -16,7 +16,11 @@ public class driverthing extends LinearOpMode {
 
     // Declare OpMode members.
     private final ElapsedTime runtime = new ElapsedTime();
-
+    public double x = 0;
+    public double y = 0;
+    public double r = 0;
+    
+    
     public Servo grabber;
     double powersetterr = 1;
     public DcMotor fl;
@@ -161,6 +165,10 @@ public class driverthing extends LinearOpMode {
         double horizontal = -gamepad1.left_stick_x*.5;   // this works so dont question it
         double vertical = gamepad1.left_stick_y*.5;
         double turn = -gamepad1.right_stick_x*2/3;
+        x += horizontal
+        y += vertical
+        r += turn
+        
         //  E.setPower(gamepad1.left_stick_y);
         fl.setPower((Range.clip((vertical + horizontal + turn), -1, 1))*powersetterr);
         fr.setPower((Range.clip((vertical - horizontal - turn), -1, 1))*powersetterr);
@@ -170,7 +178,8 @@ public class driverthing extends LinearOpMode {
 
     void move(double X, double Y, double T, double U, double TU, double P){
         // make sure to set motor mode to RUN_TO_POSITION and give it power!
-
+        x += X
+        y += Y
         fl.setTargetPosition(fl.getCurrentPosition() + (int) (U * (Y + X)));//
         fr.setTargetPosition(fl.getCurrentPosition() + (int) (U * (Y - X)));//
         bl.setTargetPosition(fl.getCurrentPosition() + (int) (U * (Y - X)));//
