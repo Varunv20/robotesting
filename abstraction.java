@@ -249,15 +249,15 @@ public class abstraction {
 
 
     }
-    public float mse(byte[] rgb){
+    public double mse( ArrayList<Double> [] rgb){
         // abstraction robot = new abstraction(hardwareMap, gamepad1);
-        byte[] yellow = {127,127,-128};
-        int sum = 0;
+        double yellow = {255,255,0};
+        double sum = 0;
         for (int i = 0; i <rgb.length; i++){
            sum += Math.pow(yellow[i]-rgb[i],2);
         }
 
-        return sum;
+        return sum/3;
 
     }
     public boolean centered = false;
@@ -286,16 +286,16 @@ public class abstraction {
         }
 
     }
-    public boolean center(byte[][][] array_of_pixels){
+    public boolean center( ArrayList<ArrayList<ArrayList<Double>>>  array_of_pixels){
         int line_num  = (int)array_of_pixels.length/3;
-        byte[][] line_of_pixels = array_of_pixels[line_num];
+         ArrayList<ArrayList<Double>>  line_of_pixels = array_of_pixels[line_num];
         int yellow_counter = 0;
         int yellows = 0;
         boolean prev_data = false;
         int highest_num_yellow = 0;
         for (int i = 0; i <line_of_pixels.length; i++){
             float j = mse(line_of_pixels[i]);
-            if (j <= 30){
+            if (j <= 500){
                yellow_counter += 1;
                prev_data = true;
             }
@@ -316,9 +316,9 @@ public class abstraction {
 
 
     }
-    public boolean f(byte[][][] array_of_pixels){
+    public boolean f( ArrayList<ArrayList<ArrayList<Double>>> array_of_pixels){
         int line_num  = (int)array_of_pixels.length/3;
-        byte[][] line_of_pixels = array_of_pixels[line_num];
+        ArrayList<ArrayList<Double>>  line_of_pixels = array_of_pixels[line_num];
         int yellow_counter = 0;
         int yellows = 0;
         boolean prev_data = false;
