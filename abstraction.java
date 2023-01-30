@@ -147,7 +147,8 @@ public class abstraction {
 
     void move(double X, double Y, double T, double U, double TU, double P) {
         // make sure to set motor mode to RUN_TO_POSITION and give it power!
-
+        //x += X
+        //y += Y
         fl.setTargetPosition(fl.getCurrentPosition() + (int) (U * (Y + X)));//
         fr.setTargetPosition(fl.getCurrentPosition() + (int) (U * (Y - X)));//
         bl.setTargetPosition(fl.getCurrentPosition() + (int) (U * (Y - X)));//
